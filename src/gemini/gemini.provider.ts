@@ -19,3 +19,4 @@ export const GeminiProVisionModelProvider: Provider<GenerativeModel> = {
     },
     inject: [ConfigService],
   };
+  

@@ -2,7 +2,6 @@
 import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { GeminiService } from './gemini.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes } from '@nestjs/swagger';
 
 @Controller('gemini')
 export class GeminiController {
@@ -20,7 +19,7 @@ export class GeminiController {
       const text = await this.geminiService.generateDocumentRseult(file);
       return { text };
     } catch (error) {
-      console.error('Error generating text:', error);
+      console.error('Error generating text:', error); 
       return { message: 'Error processing the file', error: error.message };
     }
   }
