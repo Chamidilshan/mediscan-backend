@@ -20,7 +20,10 @@ function setupSwagger(app: NestExpressApplication) {
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.enableCors();
+  app.enableCors({
+    origin: ['https://medi-scan-three.vercel.app'], 
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',      
+  });
   setupSwagger(app);
   const uploadDir = join(process.cwd(), 'uploads');
   if (!existsSync(uploadDir)) {
