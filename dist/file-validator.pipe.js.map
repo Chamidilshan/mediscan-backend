@@ -1,0 +1,1 @@
+{"version":3,"file":"file-validator.pipe.js","sourceRoot":"","sources":["../src/file-validator.pipe.ts"],"names":[],"mappings":";;;AAEA,2CAAwF;AAE3E,QAAA,iBAAiB,GAAG,IAAI,sBAAa,CAAC;IACjD,UAAU,EAAE;QACV,IAAI,6BAAoB,CAAC,EAAE,OAAO,EAAE,CAAC,GAAG,IAAI,GAAG,IAAI,EAAE,CAAC;QACtD,IAAI,0BAAiB,CAAC,EAAE,QAAQ,EAAE,IAAI,MAAM,CAAC,kBAAkB,CAAC,EAAE,CAAC;KACpE;CACF,CAAC,CAAC"}
