@@ -4,11 +4,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { GeminiModule } from './gemini/gemini.module';
 import { ConfigModule } from '@nestjs/config';
+import { SupabaseModule } from './supabase/supabase.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
     isGlobal: true,
-  }), GeminiModule],
+  }), GeminiModule, SupabaseModule],
   controllers: [AppController],
   providers: [AppService],
 })

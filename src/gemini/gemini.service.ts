@@ -1,16 +1,18 @@
 /* eslint-disable prettier/prettier */
-import { Content, GenerativeModel, Part } from '@google/generative-ai';
+import { GenerativeModel } from '@google/generative-ai';
 import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { GEMINI_FLASH } from './gemini.constants';
+import { SupabaseService } from 'src/supabase/supabase.service';
 
 @Injectable()
 export class GeminiService {
 
   constructor(
     @Inject(GEMINI_FLASH) private readonly proVisionModel: GenerativeModel,
+    private readonly supabaseService: SupabaseService,
   ) { }
 
-  async generateDocumentRseult(file: Express.Multer.File) {
+  async generateDocumentRseult(userId: string, file: Express.Multer.File) {
     // const prompt = "Analyze the uploaded image to determine if it is a medical document, such as a patient diagnosis or medical report, written by a doctor or medical professional.\nIf the document is not a medical document, respond with a clear statement: 'This document is not identified as a medical document.'\nIf the document is identified as a medical document, extract the relevant information and present it in a structured and simplified way that a layperson can understand. Include the following sections:\n\nPatient Information: Name, age, gender, etc.\nSymptoms: List the symptoms mentioned.\nDiagnosis: Provide a simplified explanation of the diagnosis.\nTreatment Plan: Outline the recommended treatment or advice.\nAdditional Notes: Include any observations or recommendations from the doctor.";
 
     try {
@@ -48,21 +50,45 @@ export class GeminiService {
       //   return response.text();
 
 
-      const generationConfig = {
-        temperature: 1,
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 8192,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            response: {
-              type: "string"
-            }
-          }
-        },
-      };
+      // const generationConfig = {
+      //   temperature: 1,
+      //   topP: 0.95,
+      //   topK: 40,
+      //   maxOutputTokens: 8192,
+      //   responseMimeType: "application/json",
+      //   responseSchema: {
+      //     type: "object",
+      //     properties: {
+      //       response: {
+      //         type: "string"
+      //       }
+      //     }
+      //   },
+      // }; 
+
+
+      const prompt = `Analyze the uploaded image to determine if it is a medical document, such as a patient diagnosis or medical report, written by a doctor or medical professional.\nIf the document is not a medical document, respond with a clear statement: 'This document is not identified as a medical document.'\nIf the document is identified as a medical document, extract the relevant information and present it in a structured and simplified way that a layperson can understand. Include the following sections:\n\nPatient Information: Name, age, gender, etc.\nSymptoms: List the symptoms mentioned.\nDiagnosis: Provide a simplified explanation of the diagnosis.\nTreatment Plan: Outline the recommended treatment or advice.\nAdditional Notes: Include any observations or recommendations from the doctor. Your response must be a JSON object.\n 
+      ensure that each field is included even if the data is not available (use empty strings or empty arrays as appropriate):
+
+      Patient Information:
+      - Name (string)
+      - Age (number)
+      - Gender (string)
+      - Height (string)
+      - Weight (string)
+      - BMI (string)
+      
+      Symptoms (array of strings)
+      
+      Diagnosis (string)
+      
+      Treatment Plan (string)
+      
+      Additional Notes (string)
+      
+      Your response must be a JSON object.
+      `;
+
 
 
       const chatSession = this.proVisionModel.startChat({
@@ -76,7 +102,7 @@ export class GeminiService {
                   data: file.buffer.toString('base64'),
                 },
               },
-              { text: "\"Analyze the uploaded image to determine if it is a medical document, such as a patient diagnosis or medical report, written by a doctor or medical professional.\nIf the document is not a medical document, respond with a clear statement: 'This document is not identified as a medical document.\nIf the document is identified as a medical document, extract the relevant information and present it in a structured and simplified way that a layperson can understand. Include the following sections:\n\nPatient Information: Name, age, gender, etc.\nSymptoms: List the symptoms mentioned.\nDiagnosis: Provide a simplified explanation of the diagnosis.\nTreatment Plan: Outline the recommended treatment or advice.\nAdditional Notes: Include any observations or recommendations from the doctor. Your response must be a JSON object. \n" },
+              { text: prompt },          
             ],
           },
           {
@@ -101,7 +127,46 @@ export class GeminiService {
       try {
         const cleanedText = responseText.replace(/```json\n|```/g, '');
         const jsonResponse = JSON.parse(cleanedText);
-        return jsonResponse;
+
+       try{
+        const imagePath =  `${userId}/${Date.now()}.jpg`;
+
+        const uploadData = await this.supabaseService.uploadFile(
+          'scanned-images',
+          imagePath,
+          file.buffer,
+          file.mimetype,
+        );
+
+        const record = {
+          userId,
+          result: jsonResponse,
+          imageUrl: uploadData.path,
+          scannedAt: new Date(),
+        };
+
+
+        await this.supabaseService.saveRecord('scanned_results', record);
+       } catch(e){
+          console.error('Error saving record:', e);
+       } 
+
+       const formattedResponse = {
+        "Patient Information": jsonResponse["Patient Information"] || {
+          "Name": "N/A",
+          "Age": "N/A",
+          "Gender": "N/A",
+          "Height": "N/A",
+          "Weight": "N/A",
+          "BMI": "N/A"
+        },
+        "Symptoms": jsonResponse["Symptoms"] || ["N/A"],
+        "Diagnosis": jsonResponse["Diagnosis"] || "N/A",
+        "Treatment Plan": jsonResponse["Treatment Plan"] || "N/A",
+        "Additional Notes": jsonResponse["Additional Notes"] || "N/A"
+      };
+
+        return formattedResponse;
       } catch (error) {
         console.error('Error parsing JSON response:', error);
         throw new InternalServerErrorException('Failed to parse JSON response');
@@ -111,7 +176,7 @@ export class GeminiService {
     } catch (e) {
       if (e instanceof Error) {
         throw new InternalServerErrorException(e.message, e.stack);
-      }
+      } 
       throw e;
     }
   }

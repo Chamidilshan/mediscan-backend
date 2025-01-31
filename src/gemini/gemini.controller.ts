@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { GeminiService } from './gemini.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -9,14 +9,20 @@ export class GeminiController {
 
   @Post('generate-result')
   @UseInterceptors(FileInterceptor('file'))
-  async generateText(@UploadedFile() file: Express.Multer.File) { 
-    console.log('Received file:', file);  // Log the file to verify it's received
+  async generateText(
+    @Body('userId') userId: string,
+    @UploadedFile() file: Express.Multer.File
+  ) { 
+    console.log('Received file:', file);
     
     try {
       if (!file) {
         return { message: 'No file uploaded' };
       }
-      const text = await this.geminiService.generateDocumentRseult(file);
+      if(!userId){
+        return { message: 'No user id provided' };
+      }
+      const text = await this.geminiService.generateDocumentRseult(userId, file);
       return { text };
     } catch (error) {
       console.error('Error generating text:', error); 

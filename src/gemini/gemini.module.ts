@@ -6,6 +6,7 @@ import { GeminiController } from './gemini.controller';
 import { GeminiProVisionModelProvider } from './gemini.provider';
 import { MulterModule } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { SupabaseModule } from 'src/supabase/supabase.module';
 
 
 
@@ -14,8 +15,9 @@ import { memoryStorage } from 'multer';
     MulterModule.register({
       storage: memoryStorage(),
     }),
+    SupabaseModule
   ],
-  controllers: [GeminiController],
+  controllers: [GeminiController], 
   providers: [GeminiService, GeminiProVisionModelProvider],
   exports: [GeminiService], 
 })
